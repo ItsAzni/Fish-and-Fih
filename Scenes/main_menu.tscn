@@ -308,6 +308,21 @@ theme_override_styles/hover = SubResource("StyleBoxFlat_btn_hover")
 theme_override_styles/pressed = SubResource("StyleBoxFlat_btn_pressed")
 text = "← Back"
 
+[node name="Spacer3" type="Control" parent="SettingsPanel/CenterContainer/VBoxContainer"]
+custom_minimum_size = Vector2(0, 20)
+layout_mode = 2
+
+[node name="ResetData" type="Button" parent="SettingsPanel/CenterContainer/VBoxContainer"]
+custom_minimum_size = Vector2(0, 44)
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 0.4, 0.4, 1)
+theme_override_fonts/font = ExtResource("3_r7f2m")
+theme_override_font_sizes/font_size = 14
+theme_override_styles/normal = SubResource("StyleBoxFlat_btn_normal")
+theme_override_styles/hover = SubResource("StyleBoxFlat_btn_hover")
+theme_override_styles/pressed = SubResource("StyleBoxFlat_btn_pressed")
+text = "Reset Player Data"
+
 [connection signal="pressed" from="ButtonManager/CenterContainer/VBoxContainer/Start" to="." method="_on_start_pressed"]
 [connection signal="pressed" from="ButtonManager/CenterContainer/VBoxContainer/Settings" to="." method="_on_settings_pressed"]
 [connection signal="pressed" from="ButtonManager/CenterContainer/VBoxContainer/Quit" to="." method="_on_quit_pressed"]
@@ -316,3 +331,4 @@ text = "← Back"
 [connection signal="value_changed" from="SettingsPanel/CenterContainer/VBoxContainer/SFXSlider" to="." method="_on_sfx_slider_value_changed"]
 [connection signal="value_changed" from="SettingsPanel/CenterContainer/VBoxContainer/BrightnessSlider" to="." method="_on_brightness_slider_value_changed"]
 [connection signal="pressed" from="SettingsPanel/CenterContainer/VBoxContainer/Back" to="." method="_on_back_pressed"]
+[connection signal="pressed" from="SettingsPanel/CenterContainer/VBoxContainer/ResetData" to="." method="_on_reset_data_pressed"]

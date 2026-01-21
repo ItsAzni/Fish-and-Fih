@@ -1,12 +1,15 @@
 extends Node
 
-## SessionManager Autoload - Manages runtime game progress (per-session, resets on restart)
+## SessionManager Autoload - Manages game progress with persistent save
 
 # Signals
 signal coins_changed(new_amount: int)
 signal bucket_updated()
 signal rod_upgraded(new_level: int)
 signal area_changed(new_area: String)
+
+# Save file path
+const SAVE_PATH = "user://player_data.cfg"
 
 # Runtime data
 var coins: int = 0
@@ -45,8 +48,63 @@ const AREA_REQUIREMENTS = {
 
 
 func _ready() -> void:
-	reset_session()
-	print("🎣 SessionManager initialized - Coins: %d, Rod Lv: %d" % [coins, rod_level])
+	load_data()
+	print("SessionManager loaded - Coins: %d, Rod Lv: %d, Area: %s" % [coins, rod_level, current_area])
+
+
+# ========== SAVE/LOAD ==========
+
+func save_data() -> void:
+	var config = ConfigFile.new()
+	
+	config.set_value("player", "coins", coins)
+	config.set_value("player", "rod_level", rod_level)
+	config.set_value("player", "current_area", current_area)
+	
+	# Serialize bucket (fish array)
+	var bucket_data: Array = []
+	for fish in bucket:
+		bucket_data.append(fish.to_dict())
+	config.set_value("player", "bucket", bucket_data)
+	
+	var err = config.save(SAVE_PATH)
+	if err == OK:
+		print("Player data saved! (Bucket: %d fish)" % bucket.size())
+	else:
+		push_error("Failed to save player data: %d" % err)
+
+
+func load_data() -> void:
+	var config = ConfigFile.new()
+	var err = config.load(SAVE_PATH)
+	
+	if err == OK:
+		coins = config.get_value("player", "coins", 0)
+		rod_level = config.get_value("player", "rod_level", 1)
+		current_area = config.get_value("player", "current_area", "Pond")
+		
+		# Load bucket
+		bucket.clear()
+		var bucket_data = config.get_value("player", "bucket", [])
+		for fish_data in bucket_data:
+			var fish = FishInstance.from_dict(fish_data)
+			if fish.fish_type != null:
+				bucket.append(fish)
+		
+		print("Player data loaded! (Bucket: %d fish)" % bucket.size())
+	else:
+		# First time - use defaults
+		coins = 0
+		rod_level = 1
+		current_area = "Pond"
+		bucket.clear()
+		print("No save file found, starting fresh!")
+	
+	# Emit signals to update UI
+	coins_changed.emit(coins)
+	rod_upgraded.emit(rod_level)
+	area_changed.emit(current_area)
+	bucket_updated.emit()
 
 
 # ========== BUCKET MANAGEMENT ==========
@@ -62,17 +120,18 @@ func can_add_fish() -> bool:
 
 func add_fish(fish_instance: FishInstance) -> bool:
 	if not can_add_fish():
-		print("❌ Bucket full! Cannot add fish.")
+		print("Bucket full! Cannot add fish.")
 		return false
 	
 	bucket.append(fish_instance)
-	print("🐟 Added to bucket: %s ($%d) | Bucket: %d/%d" % [
+	print("Added to bucket: %s ($%d) | Bucket: %d/%d" % [
 		fish_instance.get_display_name(), 
 		fish_instance.price,
 		bucket.size(),
 		get_bucket_capacity()
 	])
 	bucket_updated.emit()
+	save_data()
 	return true
 
 
@@ -127,6 +186,7 @@ func get_bucket_total_value() -> int:
 func add_coins(amount: int) -> void:
 	coins += amount
 	coins_changed.emit(coins)
+	save_data()
 
 
 func spend_coins(amount: int) -> bool:
@@ -134,6 +194,7 @@ func spend_coins(amount: int) -> bool:
 		return false
 	coins -= amount
 	coins_changed.emit(coins)
+	save_data()
 	return true
 
 
@@ -159,8 +220,9 @@ func upgrade_rod() -> bool:
 	spend_coins(cost)
 	rod_level += 1
 	
-	print("⬆️ Rod upgraded to Lv %d! Cost: $%d" % [rod_level, cost])
+	print("Rod upgraded to Lv %d! Cost: $%d" % [rod_level, cost])
 	rod_upgraded.emit(rod_level)
+	save_data()
 	return true
 
 
@@ -218,7 +280,7 @@ func calculate_escape_chance(fish_weight: float) -> float:
 	return escape_chance
 
 
-# ========== SESSION RESET ==========
+# ========== DATA RESET ==========
 
 func reset_session() -> void:
 	coins = 0
@@ -226,7 +288,28 @@ func reset_session() -> void:
 	current_area = "Pond"
 	bucket.clear()
 	
-	print("🔄 Session reset!")
+	print("Session reset!")
+	coins_changed.emit(coins)
+	rod_upgraded.emit(rod_level)
+	area_changed.emit(current_area)
+	bucket_updated.emit()
+
+
+func reset_player_data() -> void:
+	# Reset all player data and save
+	coins = 0
+	rod_level = 1
+	current_area = "Pond"
+	bucket.clear()
+	
+	# Delete save file
+	if FileAccess.file_exists(SAVE_PATH):
+		DirAccess.remove_absolute(SAVE_PATH)
+	
+	# Save fresh data
+	save_data()
+	
+	print("Player data reset!")
 	coins_changed.emit(coins)
 	rod_upgraded.emit(rod_level)
 	area_changed.emit(current_area)

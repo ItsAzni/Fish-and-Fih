@@ -86,3 +86,35 @@ func get_display_name() -> String:
 
 func get_info_string() -> String:
 	return "%s | %s | %.2fkg | $%d" % [get_display_name(), get_rarity_name(), weight, price]
+
+
+# ========== SERIALIZATION ==========
+
+func to_dict() -> Dictionary:
+	var fish_path = ""
+	if fish_type:
+		fish_path = fish_type.resource_path
+	
+	return {
+		"fish_type_path": fish_path,
+		"weight": weight,
+		"size": size,
+		"rarity": rarity,
+		"price": price
+	}
+
+
+static func from_dict(data: Dictionary) -> FishInstance:
+	var instance = FishInstance.new()
+	
+	# Load fish type resource
+	var fish_path = data.get("fish_type_path", "")
+	if fish_path != "" and ResourceLoader.exists(fish_path):
+		instance.fish_type = load(fish_path) as FishType
+	
+	instance.weight = data.get("weight", 0.0)
+	instance.size = data.get("size", 0.0)
+	instance.rarity = data.get("rarity", "C")
+	instance.price = data.get("price", 0)
+	
+	return instance

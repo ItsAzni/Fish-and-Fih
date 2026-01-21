@@ -78,3 +78,9 @@ func apply_brightness() -> void:
 	if canvas_modulate:
 		var brightness_value = GameSettings.brightness
 		canvas_modulate.color = Color(brightness_value, brightness_value, brightness_value, 1.0)
+
+
+func _on_reset_data_pressed() -> void:
+	SessionManager.reset_player_data()
+	print("Player data has been reset!")
+
