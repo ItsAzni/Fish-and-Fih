@@ -1,0 +1,22 @@
+[gd_resource type="Resource" script_class="FishType" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://Scripts/FishType.gd" id="1_script"]
+
+[resource]
+script = ExtResource("1_script")
+rarity = 2
+fish_name = "Pike"
+base_price = 90
+length_min_cm = 50.0
+length_max_cm = 100.0
+length_avg_cm = 70.0
+weight_min_kg = 1.0
+weight_max_kg = 3.5
+weight_avg_kg = 2.0
+bite_time_avg = 1.0
+bite_time_variance = 0.5
+treasure_chance = 0.12
+difficulty = 0.55
+pattern = 1
+tint = Color(0.4, 0.6, 0.4, 1)
+is_legendary = false

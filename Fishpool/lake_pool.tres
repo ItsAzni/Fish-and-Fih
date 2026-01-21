@@ -1,0 +1,16 @@
+[gd_resource type="Resource" script_class="FishPoolData" load_steps=8 format=3 uid="uid://dbqhy8cufyn5c"]
+
+[ext_resource type="Script" path="res://Scripts/FishType.gd" id="1_uuh4m"]
+[ext_resource type="Resource" uid="uid://81vuftfx27ct" path="res://FishTypes/Lele.tres" id="2_5xa0j"]
+[ext_resource type="Script" path="res://Fishpool/fishpool.gd" id="2_xa5y2"]
+[ext_resource type="Resource" uid="uid://du134whnk8eeq" path="res://FishTypes/new_resource.tres" id="3_k2cf4"]
+[ext_resource type="Resource" uid="uid://dms3job3jtrq5" path="res://FishTypes/dingus.tres" id="4_ubl2b"]
+[ext_resource type="Resource" uid="uid://bu7vha086nl2d" path="res://FishTypes/red.tres" id="5_p3eah"]
+[ext_resource type="Resource" uid="uid://bal23pjhq6cek" path="res://FishTypes/tingus.tres" id="6_tm340"]
+
+[resource]
+script = ExtResource("2_xa5y2")
+pool_name = "Lake Fish Pool"
+pool_description = "Ikan-ikan yang hidup di danau tenang"
+fish_list = Array[ExtResource("1_uuh4m")]([ExtResource("2_5xa0j"), ExtResource("3_k2cf4"), ExtResource("4_ubl2b"), ExtResource("5_p3eah"), ExtResource("6_tm340")])
+spawn_weights = Array[float]([25.0, 25.0, 25.0, 25.0, 5.0])

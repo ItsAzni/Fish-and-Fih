@@ -1,0 +1,23 @@
+[gd_resource type="Resource" script_class="FishType" load_steps=3 format=3 uid="uid://bal23pjhq6cek"]
+
+[ext_resource type="Texture2D" uid="uid://c4wqo42aeuy6p" path="res://Assets/free-fishing-game-assets-pixel-art-pack/4 Icons/Icons_06.png" id="1_2jnyh"]
+[ext_resource type="Script" path="res://Scripts/FishType.gd" id="1_t812b"]
+
+[resource]
+script = ExtResource("1_t812b")
+fish_name = "Nolden Giggus"
+base_price = 500
+fish_sprite = ExtResource("1_2jnyh")
+length_min_cm = 149.8
+length_max_cm = 200.0
+length_avg_cm = 165.8
+weight_min_kg = 34.7
+weight_max_kg = 50.0
+weight_avg_kg = 38.3
+bite_time_avg = 3.0
+bite_time_variance = 2.0
+treasure_chance = 0.15
+difficulty = 1.0
+pattern = 3
+tint = Color(1, 1, 1, 1)
+is_legendary = true

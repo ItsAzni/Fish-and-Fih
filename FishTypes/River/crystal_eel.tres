@@ -1,0 +1,22 @@
+[gd_resource type="Resource" script_class="FishType" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://Scripts/FishType.gd" id="1_script"]
+
+[resource]
+script = ExtResource("1_script")
+rarity = 3
+fish_name = "Crystal Eel"
+base_price = 180
+length_min_cm = 60.0
+length_max_cm = 120.0
+length_avg_cm = 85.0
+weight_min_kg = 1.2
+weight_max_kg = 2.8
+weight_avg_kg = 2.0
+bite_time_avg = 0.9
+bite_time_variance = 0.4
+treasure_chance = 0.18
+difficulty = 0.65
+pattern = 3
+tint = Color(0.7, 0.9, 1.0, 1)
+is_legendary = false

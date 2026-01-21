@@ -1,0 +1,23 @@
+[gd_resource type="Resource" script_class="FishType" load_steps=3 format=3 uid="uid://dms3job3jtrq5"]
+
+[ext_resource type="Texture2D" uid="uid://dfgoju7usgc8j" path="res://Assets/free-fishing-game-assets-pixel-art-pack/4 Icons/Icons_04.png" id="1_ab8va"]
+[ext_resource type="Script" path="res://Scripts/FishType.gd" id="1_c24lq"]
+
+[resource]
+script = ExtResource("1_c24lq")
+fish_name = "Ikan Mas alah"
+base_price = 50
+fish_sprite = ExtResource("1_ab8va")
+length_min_cm = 68.7
+length_max_cm = 113.5
+length_avg_cm = 79.8
+weight_min_kg = 12.3
+weight_max_kg = 21.9
+weight_avg_kg = 14.4
+bite_time_avg = 1.3
+bite_time_variance = 0.5
+treasure_chance = 0.15
+difficulty = 0.45
+pattern = 2
+tint = Color(1, 1, 1, 1)
+is_legendary = false

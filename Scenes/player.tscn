@@ -1,0 +1,624 @@
+[gd_scene load_steps=36 format=3 uid="uid://waxoampntxco"]
+
+[ext_resource type="Texture2D" uid="uid://dajdwtrteerrq" path="res://Assets/free-fishing-game-assets-pixel-art-pack/1 Fisherman/Fisherman_fish.png" id="1_26vlo"]
+[ext_resource type="Texture2D" uid="uid://bsrw6wlt4qhtg" path="res://Assets/free-fishing-game-assets-pixel-art-pack/1 Fisherman/Fisherman_idle.png" id="1_76tdw"]
+[ext_resource type="Resource" uid="uid://dbqhy8cufyn5c" path="res://Fishpool/lake_pool.tres" id="1_joyhv"]
+[ext_resource type="Resource" uid="uid://62mrtxjkqmpq" path="res://RodTypes/new_resource.tres" id="1_pbwg3"]
+[ext_resource type="Texture2D" uid="uid://b1a3cc53wld68" path="res://Assets/free-fishing-game-assets-pixel-art-pack/1 Fisherman/Fisherman_hook.png" id="1_t0872"]
+[ext_resource type="Texture2D" uid="uid://ctixs75omgkcu" path="res://Assets/free-fishing-game-assets-pixel-art-pack/1 Fisherman/Fisherman_walk.png" id="2_5nlu8"]
+[ext_resource type="AudioStream" uid="uid://bwsltwr5g15de" path="res://Assets/sound/water-splash-46402.mp3" id="5_jnla0"]
+[ext_resource type="AudioStream" uid="uid://ksrruim1t471" path="res://Assets/sound/footsteps-on-nature-trail-419015.mp3" id="6_x3yvr"]
+[ext_resource type="AudioStream" uid="uid://bo6kf8rfyuwja" path="res://Assets/sound/fishing-reel-302355.mp3" id="9_bnikv"]
+
+[sub_resource type="GDScript" id="GDScript_y7xl0"]
+script/source = "extends CharacterBody2D
+
+@onready var animated_sprite_2d: AnimatedSprite2D = $AnimatedSprite2D
+@onready var tile_marker: Marker2D = $AnimatedSprite2D/Tilemarker
+@onready var waiting_timer: Timer = $WaitingTimer
+
+# ⭐ AUDIO PLAYERS
+@onready var splash_sound: AudioStreamPlayer = $SplashSound
+@onready var step_sound: AudioStreamPlayer = $StepSound
+@onready var bite_sound: AudioStreamPlayer = $BiteSound
+
+
+# Fishing System
+const FishPoolData = preload(\"res://Fishpool/fishpool.gd\")
+@export var fish_pool: FishPoolData
+@export var default_rod: Resource = null
+
+const SPEED := 130.0
+
+# State variables
+var fishing_minigame: Node = null
+var startFishing: bool = false
+var waitForFish: bool = false
+var fishing_flip_h: bool = false
+var fishBitten: bool = false
+var in_minigame: bool = false
+var is_ending_fishing: bool = false
+var can_accept_input: bool = true
+var _is_walking: bool = false  # ⭐ Track walking untuk step sound
+
+var rng := RandomNumberGenerator.new()
+var maxWaitingTime: float = 4.0
+var tile_map_layer: TileMapLayer = null
+
+
+func _ready() -> void:
+	rng.randomize()
+	
+	# Cari TileMapLayer
+	_find_tilemap_layer()
+	
+	# Print info pool
+	if fish_pool:
+		if fish_pool.has_method(\"get_pool_info\"):
+			print(fish_pool.get_pool_info())
+	else:
+		push_warning(\"⚠️ Fish Pool belum di-assign!\")
+	
+	if not default_rod:
+		push_warning(\"⚠️ Default Rod belum di-assign!\")
+
+
+func _find_tilemap_layer() -> void:
+	var parent = get_parent()
+	if not parent:
+		return
+	
+	var tile_map = parent.get_node_or_null(\"TileMap\")
+	
+	if not tile_map:
+		tile_map = get_tree().root.find_child(\"TileMap\", true, false)
+	
+	if not tile_map:
+		return
+	
+	if tile_map is TileMapLayer:
+		tile_map_layer = tile_map
+		return
+	
+	tile_map_layer = tile_map.get_node_or_null(\"TileMapLayer\")
+	
+	if not tile_map_layer:
+		for child in tile_map.get_children():
+			if child is TileMapLayer:
+				tile_map_layer = child
+				break
+
+
+# ⭐ BARU: Unhandled input untuk consume events
+func _unhandled_input(event: InputEvent) -> void:
+	# ⭐ PENTING: Jangan consume input saat minigame aktif!
+	# Biar minigame yang handle inputnya
+	if in_minigame:
+		return
+	
+	# Consume ALL attack inputs jika tidak bisa terima input
+	if not can_accept_input:
+		if event.is_action_pressed(\"attack\") or event.is_action_pressed(\"ui_accept\"):
+			get_viewport().set_input_as_handled()
+			print(\"🚫 Input consumed - blocked!\")
+			return
+
+
+func _physics_process(delta: float) -> void:
+	# Freeze movement saat minigame atau ending animation
+	if in_minigame or is_ending_fishing:
+		velocity = Vector2.ZERO
+		_stop_step_sound()  # ⭐ Stop step sound saat freeze
+		return
+
+	if startFishing:
+		_fishing_state()
+	else:
+		_move_state()
+
+	if not is_on_floor():
+		velocity += get_gravity() * delta
+
+	var direction := Input.get_axis(\"move_left\", \"move_right\")
+
+	if not startFishing:
+		if direction > 0:
+			animated_sprite_2d.flip_h = false
+		elif direction < 0:
+			animated_sprite_2d.flip_h = true
+	else:
+		animated_sprite_2d.flip_h = fishing_flip_h
+
+	if not startFishing and is_on_floor():
+		if direction == 0:
+			_play_anim_if_not_playing(\"idle\")
+			_stop_step_sound()  # ⭐ Stop step sound saat idle
+		else:
+			_play_anim_if_not_playing(\"walk\")
+			_play_step_sound()  # ⭐ Play step sound saat walking
+
+	if not startFishing:
+		if direction != 0:
+			velocity.x = direction * SPEED
+		else:
+			velocity.x = move_toward(velocity.x, 0, SPEED)
+	else:
+		velocity.x = 0
+
+	move_and_slide()
+
+
+func _fishing_state() -> void:
+	velocity = Vector2.ZERO
+
+	if not fishBitten and not waitForFish:
+		_wait_for_fish()
+
+	# ⭐ Cek master input flag
+	if fishBitten and can_accept_input:
+		if Input.is_action_just_pressed(\"attack\"):
+			print(\"🎣 Attack pressed - starting minigame...\")
+			
+			# ⭐ BLOCK INPUT IMMEDIATELY
+			can_accept_input = false
+			
+			waiting_timer.stop()
+			_play_anim_if_not_playing(\"bite\")
+			
+			# ⭐ Wait untuk animasi + flush input buffer
+			await get_tree().create_timer(0.15).timeout
+			
+			_start_mini_game()
+	
+	# Cancel fishing
+	if can_accept_input and Input.is_action_just_pressed(\"fih\"):
+		_stop_fishing()
+
+
+func _move_state() -> void:
+	if can_accept_input and Input.is_action_just_pressed(\"fih\"):
+		_start_fishing()
+
+
+func _start_fishing() -> void:
+	fishing_flip_h = animated_sprite_2d.flip_h
+
+	var tile_type = _get_tile_data()
+	print(\"🎣 Coba mancing di tile: %s\" % str(tile_type))
+
+	if tile_type == null or tile_type != \"water\":
+		print(\"❌ Bukan air, batal mancing\")
+		return
+
+	startFishing = true
+	waitForFish = false
+	fishBitten = false
+	can_accept_input = true
+	_stop_step_sound()
+	_play_anim_if_not_playing(\"wait\")
+	
+	# ⭐ Play splash sound
+	if is_instance_valid(splash_sound):
+		splash_sound.play()
+	
+	print(\"🎣 Mulai mancing...\")
+
+
+func _stop_fishing() -> void:
+	print(\"🚫 Batal mancing\")
+	startFishing = false
+	fishBitten = false
+	waitForFish = false
+	can_accept_input = true
+	waiting_timer.stop()
+	animated_sprite_2d.visible = true
+	_play_anim_if_not_playing(\"end_fih\")
+
+
+func _wait_for_fish() -> void:
+	animated_sprite_2d.visible = true
+	_play_anim_if_not_playing(\"wait\")
+
+	if waiting_timer.is_stopped():
+		waitForFish = true
+		waiting_timer.wait_time = rng.randf_range(1.0, maxWaitingTime)
+		waiting_timer.start()
+		print(\"⏳ Menunggu ikan: %.1fs\" % waiting_timer.wait_time)
+
+
+
+func _start_mini_game() -> void:
+	
+	await get_tree().create_timer(0.2).timeout
+	if is_instance_valid(bite_sound):
+		bite_sound.stop()
+
+
+	# Validasi
+	if not fish_pool:
+		push_error(\"❌ Fish Pool tidak di-assign!\")
+		can_accept_input = true
+		_stop_fishing()
+		return
+	
+	if not default_rod:
+		push_error(\"❌ Rod tidak di-assign!\")
+		can_accept_input = true
+		_stop_fishing()
+		return
+
+	if not fish_pool.has_method(\"get_random_fish\"):
+		push_error(\"❌ Fish Pool tidak valid!\")
+		can_accept_input = true
+		_stop_fishing()
+		return
+
+	# Ambil ikan random dari pool
+	var random_fish = fish_pool.get_random_fish()
+	if not random_fish:
+		push_error(\"❌ Gagal ambil ikan dari pool!\")
+		can_accept_input = true
+		_stop_fishing()
+		return
+
+	# Set state
+	in_minigame = true
+	fishBitten = false
+	waitForFish = false
+	
+	print(\"🔒 Input LOCKED for minigame\")
+
+	# Load minigame
+	var scene := preload(\"res://Scenes/fishing_minigame.tscn\")
+	fishing_minigame = scene.instantiate()
+	get_tree().root.add_child(fishing_minigame)
+
+	# Assign fish & rod
+	fishing_minigame.fish = random_fish
+	fishing_minigame.rod = default_rod
+
+	# Connect signal
+	fishing_minigame.connect(\"fishing_finished\", _on_fishing_mini_done)
+	
+	# ⭐ Wait 1 frame lagi sebelum start untuk flush input
+	await get_tree().process_frame
+	
+	# Start
+	fishing_minigame.start_minigame()
+	print(\"🎮 Minigame dimulai dengan: %s\" % random_fish.fish_name)
+
+
+func _on_fishing_mini_done(success: bool, caught_fish: FishType, value: int) -> void:
+	print(\"🎮 Minigame selesai! Success: %s\" % str(success))
+
+	if success and caught_fish:
+		print(\"✅ Dapat ikan: %s senilai $%d\" % [caught_fish.fish_name, value])
+	else:
+		print(\"❌ Ikan lepas!\")
+
+	# Cleanup minigame
+	if is_instance_valid(fishing_minigame):
+		fishing_minigame.queue_free()
+		fishing_minigame = null
+
+	# SET FLAG ENDING
+	is_ending_fishing = true
+	in_minigame = false
+	
+	print(\"🔒 Input still LOCKED for ending animation\")
+	
+	# Set sprite visible
+	animated_sprite_2d.visible = true
+	
+	# Pilih animasi yang ada
+	var end_anim = \"idle\"
+	if animated_sprite_2d.sprite_frames.has_animation(\"end_fih\"):
+		end_anim = \"end_fih\"
+	elif animated_sprite_2d.sprite_frames.has_animation(\"bite\"):
+		end_anim = \"bite\"
+	
+	print(\"🎬 Playing animation: \", end_anim)
+	animated_sprite_2d.play(end_anim)
+	
+	# Calculate duration
+	var frame_count = animated_sprite_2d.sprite_frames.get_frame_count(end_anim)
+	var fps = animated_sprite_2d.sprite_frames.get_animation_speed(end_anim)
+	var duration = (frame_count / fps if fps > 0 else 1.0) + 0.2
+	
+	print(\"🎬 Waiting %.2fs for animation...\" % duration)
+	await get_tree().create_timer(duration).timeout
+	
+	# Reset states
+	is_ending_fishing = false
+	startFishing = false
+	fishBitten = false
+	waitForFish = false
+	
+	# ⭐ UNLOCK input setelah semua selesai
+	can_accept_input = true
+	print(\"🔓 Input UNLOCKED - ready for next fishing\")
+	
+	# Back to idle
+	animated_sprite_2d.play(\"idle\")
+	print(\"🎬 Back to idle - can move now\")
+
+
+func _on_waiting_timer_timeout() -> void:
+	waiting_timer.stop()
+	fishBitten = true
+	waitForFish = false
+	_play_anim_if_not_playing(\"bite\")
+	if is_instance_valid(bite_sound):
+		bite_sound.play()
+		Input.flush_buffered_events()
+
+	print(\"🐟 Ikan menggigit! Tekan attack!\")
+
+
+func _on_animated_sprite_2d_animation_finished() -> void:
+	if animated_sprite_2d.animation == \"wait\":
+		waitForFish = true
+
+
+func _get_tile_data():
+	if not is_instance_valid(tile_map_layer):
+		return null
+	
+	var local_pos = tile_map_layer.to_local(tile_marker.global_position)
+	var map_pos = tile_map_layer.local_to_map(local_pos)
+	
+	var cell_data = tile_map_layer.get_cell_tile_data(map_pos)
+	if cell_data == null:
+		return null
+	
+	return cell_data.get_custom_data(\"type\")
+
+
+func _play_anim_if_not_playing(anim_name: String) -> void:
+	if animated_sprite_2d.animation != anim_name:
+		animated_sprite_2d.play(anim_name)
+
+
+# ⭐ Step sound functions
+func _play_step_sound():
+	if not _is_walking and is_instance_valid(step_sound):
+		_is_walking = true
+		if not step_sound.playing:
+			step_sound.play()
+
+
+func _stop_step_sound():
+	if _is_walking and is_instance_valid(step_sound):
+		_is_walking = false
+		step_sound.stop()
+"
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_gs2wu"]
+atlas = ExtResource("1_t0872")
+region = Rect2(0, 0, 48, 48)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_a3o8w"]
+atlas = ExtResource("1_t0872")
+region = Rect2(48, 0, 48, 48)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_m4hy8"]
+atlas = ExtResource("1_t0872")
+region = Rect2(96, 0, 48, 48)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_414rn"]
+atlas = ExtResource("1_t0872")
+region = Rect2(48, 0, 48, 48)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_u0vx2"]
+atlas = ExtResource("1_t0872")
+region = Rect2(0, 0, 48, 48)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_oyfrh"]
+atlas = ExtResource("1_t0872")
+region = Rect2(96, 0, 48, 48)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_405s2"]
+atlas = ExtResource("1_t0872")
+region = Rect2(144, 0, 48, 48)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_j8pwf"]
+atlas = ExtResource("1_t0872")
+region = Rect2(192, 0, 48, 48)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_7qi0g"]
+atlas = ExtResource("1_t0872")
+region = Rect2(240, 0, 48, 48)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_8kqwv"]
+atlas = ExtResource("1_76tdw")
+region = Rect2(0, 0, 48, 48)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_ydod7"]
+atlas = ExtResource("1_76tdw")
+region = Rect2(48, 0, 48, 48)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_xk5vc"]
+atlas = ExtResource("1_76tdw")
+region = Rect2(96, 0, 48, 48)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_lb5il"]
+atlas = ExtResource("1_76tdw")
+region = Rect2(144, 0, 48, 48)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_ft4bj"]
+atlas = ExtResource("1_26vlo")
+region = Rect2(0, 0, 48, 48)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_scno0"]
+atlas = ExtResource("1_26vlo")
+region = Rect2(48, 0, 48, 48)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_sw2ik"]
+atlas = ExtResource("1_26vlo")
+region = Rect2(96, 0, 48, 48)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_1jyia"]
+atlas = ExtResource("1_26vlo")
+region = Rect2(144, 0, 48, 48)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_2v2wp"]
+atlas = ExtResource("2_5nlu8")
+region = Rect2(0, 0, 48, 48)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_0i2us"]
+atlas = ExtResource("2_5nlu8")
+region = Rect2(48, 0, 48, 48)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_f5ms7"]
+atlas = ExtResource("2_5nlu8")
+region = Rect2(96, 0, 48, 48)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_tk501"]
+atlas = ExtResource("2_5nlu8")
+region = Rect2(144, 0, 48, 48)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_2wfkh"]
+atlas = ExtResource("2_5nlu8")
+region = Rect2(192, 0, 48, 48)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_oit02"]
+atlas = ExtResource("2_5nlu8")
+region = Rect2(240, 0, 48, 48)
+
+[sub_resource type="SpriteFrames" id="SpriteFrames_8utkh"]
+animations = [{
+"frames": [{
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_gs2wu")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_a3o8w")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_m4hy8")
+}],
+"loop": true,
+"name": &"bite",
+"speed": 5.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_414rn")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_u0vx2")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_oyfrh")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_405s2")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_j8pwf")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_7qi0g")
+}],
+"loop": false,
+"name": &"end_fih",
+"speed": 5.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_8kqwv")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_ydod7")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_xk5vc")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_lb5il")
+}],
+"loop": true,
+"name": &"idle",
+"speed": 3.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_ft4bj")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_scno0")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_sw2ik")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_1jyia")
+}],
+"loop": false,
+"name": &"wait",
+"speed": 3.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_2v2wp")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_0i2us")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_f5ms7")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_tk501")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_2wfkh")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_oit02")
+}],
+"loop": true,
+"name": &"walk",
+"speed": 5.0
+}]
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_1ssts"]
+size = Vector2(20, 34)
+
+[node name="CharacterBody2D" type="CharacterBody2D"]
+position = Vector2(7, 13)
+script = SubResource("GDScript_y7xl0")
+fish_pool = ExtResource("1_joyhv")
+default_rod = ExtResource("1_pbwg3")
+
+[node name="AnimatedSprite2D" type="AnimatedSprite2D" parent="."]
+position = Vector2(24, -25)
+sprite_frames = SubResource("SpriteFrames_8utkh")
+animation = &"idle"
+autoplay = "idle"
+frame_progress = 0.901485
+
+[node name="Tilemarker" type="Marker2D" parent="AnimatedSprite2D"]
+position = Vector2(28, 26)
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="."]
+position = Vector2(16, -18)
+shape = SubResource("RectangleShape2D_1ssts")
+
+[node name="WaitingTimer" type="Timer" parent="."]
+
+[node name="SplashSound" type="AudioStreamPlayer" parent="."]
+stream = ExtResource("5_jnla0")
+bus = &"SFX"
+
+[node name="StepSound" type="AudioStreamPlayer" parent="."]
+stream = ExtResource("6_x3yvr")
+volume_db = -23.952
+bus = &"SFX"
+
+[node name="BiteSound" type="AudioStreamPlayer" parent="."]
+stream = ExtResource("9_bnikv")
+bus = &"SFX"
+
+[connection signal="animation_finished" from="AnimatedSprite2D" to="." method="_on_animated_sprite_2d_animation_finished"]
+[connection signal="timeout" from="WaitingTimer" to="." method="_on_waiting_timer_timeout"]

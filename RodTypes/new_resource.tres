@@ -1,0 +1,17 @@
+[gd_resource type="Resource" script_class="RodType" load_steps=2 format=3 uid="uid://62mrtxjkqmpq"]
+
+[ext_resource type="Script" path="res://Scripts/RodType.gd" id="1_edwng"]
+
+[resource]
+script = ExtResource("1_edwng")
+rod_name = "Bamboo Pole"
+bar_size_bonus = 0.0
+bar_accel = 1800.0
+bar_drag = 0.06
+bar_gravity = 100.0
+bite_rate_mult = 1.0
+hook_window_mult = 1.0
+escape_drain_mult = 1.0
+treasure_mult = 1.0
+hit_freeze_mult = 1.0
+allow_tackle_slot = false

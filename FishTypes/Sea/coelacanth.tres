@@ -1,0 +1,22 @@
+[gd_resource type="Resource" script_class="FishType" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://Scripts/FishType.gd" id="1_script"]
+
+[resource]
+script = ExtResource("1_script")
+rarity = 4
+fish_name = "Ancient Coelacanth"
+base_price = 400
+length_min_cm = 120.0
+length_max_cm = 200.0
+length_avg_cm = 160.0
+weight_min_kg = 5.0
+weight_max_kg = 12.0
+weight_avg_kg = 8.0
+bite_time_avg = 0.7
+bite_time_variance = 0.3
+treasure_chance = 0.35
+difficulty = 0.85
+pattern = 3
+tint = Color(0.2, 0.8, 0.7, 1)
+is_legendary = true

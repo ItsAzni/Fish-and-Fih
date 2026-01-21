@@ -1,0 +1,22 @@
+[gd_resource type="Resource" script_class="FishType" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://Scripts/FishType.gd" id="1_script"]
+
+[resource]
+script = ExtResource("1_script")
+rarity = 2
+fish_name = "Golden Minnow"
+base_price = 90
+length_min_cm = 5.0
+length_max_cm = 15.0
+length_avg_cm = 10.0
+weight_min_kg = 0.2
+weight_max_kg = 0.6
+weight_avg_kg = 0.35
+bite_time_avg = 0.8
+bite_time_variance = 0.3
+treasure_chance = 0.20
+difficulty = 0.5
+pattern = 1
+tint = Color(1.0, 0.85, 0.3, 1)
+is_legendary = false

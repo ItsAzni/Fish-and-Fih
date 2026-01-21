@@ -1,0 +1,233 @@
+[gd_scene load_steps=7 format=3 uid="uid://csc4gyr7eq1th"]
+
+[ext_resource type="Script" uid="uid://dqf6le03dx6ub" path="res://Scripts/shop.gd" id="1_shop"]
+[ext_resource type="FontFile" uid="uid://bma1icmk6wow4" path="res://Assets/fonts/PixelOperator8.ttf" id="2_font"]
+[ext_resource type="FontFile" uid="uid://p71svfp1bvck" path="res://Assets/fonts/PixelOperator8-Bold.ttf" id="3_boldfont"]
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_panel"]
+bg_color = Color(0.08, 0.1, 0.14, 0.98)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0.25, 0.3, 0.4, 1)
+corner_radius_top_left = 12
+corner_radius_top_right = 12
+corner_radius_bottom_right = 12
+corner_radius_bottom_left = 12
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_btn_normal"]
+bg_color = Color(0.15, 0.18, 0.25, 0.95)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0.4, 0.5, 0.7, 1)
+corner_radius_top_left = 8
+corner_radius_top_right = 8
+corner_radius_bottom_right = 8
+corner_radius_bottom_left = 8
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_btn_hover"]
+bg_color = Color(0.2, 0.25, 0.35, 1)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0.5, 0.7, 1, 1)
+corner_radius_top_left = 8
+corner_radius_top_right = 8
+corner_radius_bottom_right = 8
+corner_radius_bottom_left = 8
+
+[node name="Shop" type="CanvasLayer"]
+process_mode = 3
+layer = 20
+script = ExtResource("1_shop")
+
+[node name="Background" type="ColorRect" parent="."]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0, 0, 0, 0.85)
+
+[node name="CenterContainer" type="CenterContainer" parent="."]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="ShopPanel" type="PanelContainer" parent="CenterContainer"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(650, 550)
+layout_mode = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_panel")
+
+[node name="MarginContainer" type="MarginContainer" parent="CenterContainer/ShopPanel"]
+layout_mode = 2
+theme_override_constants/margin_left = 24
+theme_override_constants/margin_top = 20
+theme_override_constants/margin_right = 24
+theme_override_constants/margin_bottom = 20
+
+[node name="VBoxContainer" type="VBoxContainer" parent="CenterContainer/ShopPanel/MarginContainer"]
+layout_mode = 2
+theme_override_constants/separation = 12
+
+[node name="Header" type="HBoxContainer" parent="CenterContainer/ShopPanel/MarginContainer/VBoxContainer"]
+layout_mode = 2
+
+[node name="TitleLabel" type="Label" parent="CenterContainer/ShopPanel/MarginContainer/VBoxContainer/Header"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.95, 0.95, 1, 1)
+theme_override_fonts/font = ExtResource("3_boldfont")
+theme_override_font_sizes/font_size = 26
+text = "[ SHOP ]"
+
+[node name="Spacer" type="Control" parent="CenterContainer/ShopPanel/MarginContainer/VBoxContainer/Header"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="ShopCoinsLabel" type="Label" parent="CenterContainer/ShopPanel/MarginContainer/VBoxContainer/Header"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 0.85, 0.3, 1)
+theme_override_fonts/font = ExtResource("3_boldfont")
+theme_override_font_sizes/font_size = 20
+text = "Coins: 0"
+
+[node name="CloseButton" type="Button" parent="CenterContainer/ShopPanel/MarginContainer/VBoxContainer/Header"]
+custom_minimum_size = Vector2(40, 40)
+layout_mode = 2
+theme_override_colors/font_color = Color(0.8, 0.8, 0.9, 1)
+theme_override_fonts/font = ExtResource("2_font")
+theme_override_font_sizes/font_size = 18
+theme_override_styles/normal = SubResource("StyleBoxFlat_btn_normal")
+theme_override_styles/hover = SubResource("StyleBoxFlat_btn_hover")
+text = "✕"
+
+[node name="HSeparator" type="HSeparator" parent="CenterContainer/ShopPanel/MarginContainer/VBoxContainer"]
+modulate = Color(0.4, 0.5, 0.6, 0.5)
+layout_mode = 2
+
+[node name="TabContainer" type="TabContainer" parent="CenterContainer/ShopPanel/MarginContainer/VBoxContainer"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_vertical = 3
+current_tab = 0
+
+[node name="Sell" type="VBoxContainer" parent="CenterContainer/ShopPanel/MarginContainer/VBoxContainer/TabContainer"]
+layout_mode = 2
+theme_override_constants/separation = 10
+metadata/_tab_index = 0
+
+[node name="FishList" type="ItemList" parent="CenterContainer/ShopPanel/MarginContainer/VBoxContainer/TabContainer/Sell"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_vertical = 3
+theme_override_colors/font_color = Color(0.9, 0.9, 0.95, 1)
+theme_override_fonts/font = ExtResource("2_font")
+theme_override_font_sizes/font_size = 14
+select_mode = 1
+
+[node name="TotalValueLabel" type="Label" parent="CenterContainer/ShopPanel/MarginContainer/VBoxContainer/TabContainer/Sell"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_colors/font_color = Color(0.7, 0.85, 0.7, 1)
+theme_override_fonts/font = ExtResource("2_font")
+theme_override_font_sizes/font_size = 16
+text = "Total Value: $0"
+
+[node name="ButtonsContainer" type="HBoxContainer" parent="CenterContainer/ShopPanel/MarginContainer/VBoxContainer/TabContainer/Sell"]
+layout_mode = 2
+theme_override_constants/separation = 12
+
+[node name="SellAllButton" type="Button" parent="CenterContainer/ShopPanel/MarginContainer/VBoxContainer/TabContainer/Sell/ButtonsContainer"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 44)
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_colors/font_color = Color(0.9, 0.95, 1, 1)
+theme_override_fonts/font = ExtResource("2_font")
+theme_override_font_sizes/font_size = 16
+theme_override_styles/normal = SubResource("StyleBoxFlat_btn_normal")
+theme_override_styles/hover = SubResource("StyleBoxFlat_btn_hover")
+text = "Sell All"
+
+[node name="SellSelectedButton" type="Button" parent="CenterContainer/ShopPanel/MarginContainer/VBoxContainer/TabContainer/Sell/ButtonsContainer"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 44)
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_colors/font_color = Color(0.9, 0.95, 1, 1)
+theme_override_fonts/font = ExtResource("2_font")
+theme_override_font_sizes/font_size = 16
+theme_override_styles/normal = SubResource("StyleBoxFlat_btn_normal")
+theme_override_styles/hover = SubResource("StyleBoxFlat_btn_hover")
+text = "Sell Selected"
+
+[node name="Upgrade" type="VBoxContainer" parent="CenterContainer/ShopPanel/MarginContainer/VBoxContainer/TabContainer"]
+visible = false
+layout_mode = 2
+theme_override_constants/separation = 16
+metadata/_tab_index = 1
+
+[node name="RodInfoLabel" type="Label" parent="CenterContainer/ShopPanel/MarginContainer/VBoxContainer/TabContainer/Upgrade"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_colors/font_color = Color(0.8, 0.85, 0.95, 1)
+theme_override_fonts/font = ExtResource("2_font")
+theme_override_font_sizes/font_size = 15
+text = "Rod Level: 1
+Max Safe Weight: 1.5 kg
+Luck Bonus: +0%
+Reel Speed: 1.00x
+Bucket Bonus: +0 slots"
+
+[node name="Spacer" type="Control" parent="CenterContainer/ShopPanel/MarginContainer/VBoxContainer/TabContainer/Upgrade"]
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="UpgradeCostLabel" type="Label" parent="CenterContainer/ShopPanel/MarginContainer/VBoxContainer/TabContainer/Upgrade"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 0.85, 0.4, 1)
+theme_override_fonts/font = ExtResource("3_boldfont")
+theme_override_font_sizes/font_size = 18
+text = "Upgrade Cost: $200"
+horizontal_alignment = 1
+
+[node name="UpgradeButton" type="Button" parent="CenterContainer/ShopPanel/MarginContainer/VBoxContainer/TabContainer/Upgrade"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 50)
+layout_mode = 2
+theme_override_colors/font_color = Color(0.95, 0.95, 1, 1)
+theme_override_fonts/font = ExtResource("3_boldfont")
+theme_override_font_sizes/font_size = 18
+theme_override_styles/normal = SubResource("StyleBoxFlat_btn_normal")
+theme_override_styles/hover = SubResource("StyleBoxFlat_btn_hover")
+text = "Upgrade Rod"
+
+[node name="Encyclopedia" type="VBoxContainer" parent="CenterContainer/ShopPanel/MarginContainer/VBoxContainer/TabContainer"]
+visible = false
+layout_mode = 2
+metadata/_tab_index = 2
+
+[node name="Label" type="Label" parent="CenterContainer/ShopPanel/MarginContainer/VBoxContainer/TabContainer/Encyclopedia"]
+layout_mode = 2
+size_flags_vertical = 3
+theme_override_colors/font_color = Color(0.6, 0.65, 0.75, 1)
+theme_override_fonts/font = ExtResource("2_font")
+theme_override_font_sizes/font_size = 16
+text = "Fish Encyclopedia coming soon..."
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[connection signal="pressed" from="CenterContainer/ShopPanel/MarginContainer/VBoxContainer/Header/CloseButton" to="." method="_on_close_button_pressed"]
+[connection signal="multi_selected" from="CenterContainer/ShopPanel/MarginContainer/VBoxContainer/TabContainer/Sell/FishList" to="." method="_on_fish_list_multi_selected"]
+[connection signal="pressed" from="CenterContainer/ShopPanel/MarginContainer/VBoxContainer/TabContainer/Sell/ButtonsContainer/SellAllButton" to="." method="_on_sell_all_button_pressed"]
+[connection signal="pressed" from="CenterContainer/ShopPanel/MarginContainer/VBoxContainer/TabContainer/Sell/ButtonsContainer/SellSelectedButton" to="." method="_on_sell_selected_button_pressed"]
+[connection signal="pressed" from="CenterContainer/ShopPanel/MarginContainer/VBoxContainer/TabContainer/Upgrade/UpgradeButton" to="." method="_on_upgrade_button_pressed"]
