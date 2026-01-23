@@ -24,7 +24,7 @@ signal play_end_animation() # ⭐ New: trigger player end_fih animation early
 
 const BASE_BAR_HEIGHT := 20.0
 const BASE_ESCAPE_DRAIN := 30.0
-const PROGRESS_GAIN := 400.0
+const PROGRESS_GAIN := 1000.0
 const TREASURE_FILL_RATE := 55.0
 const TREASURE_NEED := 50
 const FISH_FLIP_THRESHOLD := 0.03
@@ -453,16 +453,35 @@ func _calculate_fish_value() -> int:
 		return 0
 		
 	if _fish_size <= 0 or _fish_weight <= 0:
-		return fish.base_price
+		return 20 # Default minimum
 	
-	var size_mult = _fish_size / fish.length_avg_cm
-	var weight_mult = _fish_weight / fish.weight_avg_kg
-	var final_value = fish.base_price * size_mult * weight_mult
+	# Use same formula as FishInstance.calculate_price() for consistency
+	# Base price per kg by rarity (from PRD)
+	var rarity_price_per_kg = {
+		"C": 20,
+		"U": 45,
+		"R": 90,
+		"E": 180,
+		"L": 400
+	}
 	
-	if size_mult > 1.5 or weight_mult > 1.5:
-		final_value *= 1.3
+	var rarity_str = _get_rarity_string()
+	var base_per_kg = rarity_price_per_kg.get(rarity_str, 20)
 	
-	return int(final_value)
+	# Calculate size ratio (0..1) based on weight range
+	var min_w = fish.weight_min_kg
+	var max_w = fish.weight_max_kg
+	var size_ratio = 0.5
+	if max_w > min_w:
+		size_ratio = clampf((_fish_weight - min_w) / (max_w - min_w), 0.0, 1.0)
+	
+	# Size multiplier: 0.85x to 1.30x based on size
+	var size_mult = 0.85 + (size_ratio * 0.45)
+	
+	# Final price = weight * base_per_kg * size_mult
+	var final_price = _fish_weight * base_per_kg * size_mult
+	
+	return int(round(final_price))
 
 
 func _get_rarity_string() -> String:

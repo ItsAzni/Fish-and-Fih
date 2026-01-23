@@ -25,6 +25,7 @@ var _selected_indices: Array[int] = []
 func _ready() -> void:
 	visible = false
 	SessionManager.coins_changed.connect(_update_coins)
+	SessionManager.coins_changed.connect(_on_coins_changed_refresh_upgrade) # NEW: refresh upgrade tab when coins change
 	SessionManager.bucket_updated.connect(_refresh_fish_list)
 	SessionManager.rod_upgraded.connect(_refresh_upgrade_tab)
 
@@ -46,6 +47,13 @@ func close() -> void:
 func _update_coins(amount: int) -> void:
 	if is_instance_valid(coins_label):
 		coins_label.text = "Coins: %d" % amount
+
+
+func _on_coins_changed_refresh_upgrade(_amount: int) -> void:
+	# Refresh upgrade tab when coins change (e.g. after selling fish)
+	# Only if shop is visible
+	if visible:
+		_refresh_upgrade_tab(SessionManager.rod_level)
 
 
 # ========== SELL TAB ==========
@@ -121,6 +129,9 @@ func _on_sell_selected_button_pressed() -> void:
 # ========== UPGRADE TAB ==========
 
 func _refresh_upgrade_tab(rod_level: int) -> void:
+	# Debug: Print current state
+	print("🔧 REFRESH UPGRADE TAB - Rod Lv: %d, Coins: %d" % [SessionManager.rod_level, SessionManager.coins])
+	
 	if is_instance_valid(rod_info_label):
 		var stats = SessionManager.get_rod_stats()
 		rod_info_label.text = """Rod Level: %d
@@ -136,6 +147,10 @@ Bucket Bonus: +%d slots""" % [
 		]
 	
 	var next_cost = SessionManager.get_upgrade_cost()
+	var can_upgrade = SessionManager.can_upgrade_rod()
+	
+	# Debug: Print upgrade check
+	print("🔧 Next Cost: %d, Can Upgrade: %s" % [next_cost, can_upgrade])
 	
 	if is_instance_valid(upgrade_cost_label):
 		if next_cost < 0:
@@ -144,7 +159,8 @@ Bucket Bonus: +%d slots""" % [
 			upgrade_cost_label.text = "Upgrade Cost: %d" % next_cost
 	
 	if is_instance_valid(upgrade_btn):
-		upgrade_btn.disabled = not SessionManager.can_upgrade_rod()
+		upgrade_btn.disabled = not can_upgrade
+		print("🔧 Button disabled: %s" % upgrade_btn.disabled)
 		if next_cost < 0:
 			upgrade_btn.text = "[MAX]"
 		else:
@@ -154,6 +170,9 @@ Bucket Bonus: +%d slots""" % [
 func _on_upgrade_button_pressed() -> void:
 	if SessionManager.upgrade_rod():
 		print("⬆️ Shop: Rod upgraded!")
+		# Force immediate UI refresh for next upgrade
+		_update_coins(SessionManager.coins)
+		_refresh_upgrade_tab(SessionManager.rod_level)
 
 
 # ========== CLOSE ==========

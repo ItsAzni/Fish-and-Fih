@@ -41,4 +41,3 @@ func _on_brightness_slider_value_changed(value: float) -> void:
 func _on_reset_data_pressed() -> void:
 	SessionManager.reset_player_data()
 	print("Player data has been reset!")
-
